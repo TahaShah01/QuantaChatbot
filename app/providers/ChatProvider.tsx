@@ -4,25 +4,19 @@ import React, {
   createContext,
   useContext,
   useState,
-  useCallback,
   useEffect,
+  useCallback,
   useRef,
 } from 'react';
 import {
   Conversation,
   Message,
   AISettings,
-  DEFAULT_SETTINGS,
-  PERSONAS,
-  AVAILABLE_MODELS,
   GroqModelOption,
+  DEFAULT_SETTINGS,
+  AVAILABLE_MODELS,
+  PERSONAS,
 } from '@/lib/types';
-import {
-  createConversation,
-  createMessage,
-  generateTitle,
-  generateId,
-} from '@/lib/utils';
 import {
   loadConversations,
   saveConversations,
@@ -31,11 +25,12 @@ import {
   loadSettings,
   saveSettings,
 } from '@/lib/storage';
+import { generateId, generateTitle, createMessage, createConversation } from '@/lib/utils';
 
 interface ChatContextType {
   conversations: Conversation[];
-  activeConversationId: string | null;
   activeConversation: Conversation | null;
+  activeConversationId: string | null;
   settings: AISettings;
   availableModels: GroqModelOption[];
   isStreaming: boolean;
@@ -43,15 +38,15 @@ interface ChatContextType {
   connectionError: string | null;
 
   // Actions
-  newChat: () => void;
   selectConversation: (id: string) => void;
+  newChat: () => void;
   deleteConversation: (id: string) => void;
   renameConversation: (id: string, title: string) => void;
   clearConversation: (id: string) => void;
   sendMessage: (content: string) => Promise<void>;
   regenerateLastResponse: () => Promise<void>;
   stopGeneration: () => void;
-  updateSettings: (s: Partial<AISettings>) => void;
+  updateSettings: (newSettings: Partial<AISettings>) => void;
   validateApiKey: (key: string) => Promise<{ valid: boolean; error?: string; models?: string[] }>;
   setApiKeyInMemory: (key: string) => void;
 }
@@ -60,7 +55,7 @@ const ChatContext = createContext<ChatContextType | null>(null);
 
 export function useChat() {
   const ctx = useContext(ChatContext);
-  if (!ctx) throw new Error('useChat must be used within ChatProvider');
+  if (!ctx) throw new Error('useChat must be used within a ChatProvider');
   return ctx;
 }
 
@@ -72,38 +67,48 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  const apiKeyRef = useRef('');
+  const [mounted, setMounted] = useState(false);
 
-  // ── Init ───────────────────────────────────────────────
+  // In-memory API key
+  const apiKeyRef = useRef<string>('');
+  const abortRef = useRef<AbortController | null>(null);
+
+  // Initialize from storage on mount
   useEffect(() => {
-    const loaded = loadConversations();
-    const savedSettings = loadSettings();
-    setConversations(loaded);
-    setSettings(savedSettings);
-    const activeId = loadActiveConversationId();
-    if (activeId && loaded.some((c) => c.id === activeId)) {
-      setActiveConversationId(activeId);
+    const loadedSettings = loadSettings();
+    const loadedConvos = loadConversations();
+    const loadedActiveId = loadActiveConversationId();
+
+    setSettings(loadedSettings);
+    setConversations(loadedConvos);
+
+    if (loadedActiveId && loadedConvos.some((c) => c.id === loadedActiveId)) {
+      setActiveConversationId(loadedActiveId);
+    } else if (loadedConvos.length > 0) {
+      setActiveConversationId(loadedConvos[0].id);
     }
+
+    setMounted(true);
   }, []);
 
-  // ── Persist conversations ──────────────────────────────
   const persistConversations = useCallback((convos: Conversation[]) => {
     setConversations(convos);
     saveConversations(convos);
   }, []);
 
-  // ── Derived Active Conversation ────────────────────────
-  const activeConversation =
-    conversations.find((c) => c.id === activeConversationId) || null;
+  const updateSettings = useCallback((newSettings: Partial<AISettings>) => {
+    setSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      saveSettings(updated);
+      return updated;
+    });
+  }, []);
 
-  // ── Set Key In Memory ──────────────────────────────────
   const setApiKeyInMemory = useCallback((key: string) => {
     apiKeyRef.current = key;
     setSettings((prev) => ({ ...prev, apiKey: key }));
   }, []);
 
-  // ── Validate Key with Groq & Merge Live Models ─────────
   const validateApiKey = useCallback(
     async (key: string): Promise<{ valid: boolean; error?: string; models?: string[] }> => {
       try {
@@ -118,13 +123,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           setConnectionError(null);
           apiKeyRef.current = key;
 
-          // If Groq returned live models from account, update settings & models list
           if (Array.isArray(data.models) && data.models.length > 0) {
             const returnedModelsSet = new Set(data.models);
 
             setSettings((prev) => {
               let activeModel = prev.model;
-              // If the current model is not accessible on user's account, fall back to accessible one
               if (!returnedModelsSet.has(activeModel) && !prev.customModelId) {
                 activeModel = returnedModelsSet.has('llama-3.1-8b-instant')
                   ? 'llama-3.1-8b-instant'
@@ -158,43 +161,40 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           } else {
             setSettings((prev) => ({ ...prev, apiKey: key }));
           }
+
+          return { valid: true, models: data.models };
         } else {
           setIsConnected(false);
-          setConnectionError(data.error || 'Invalid API key');
+          setConnectionError(data.error || 'Invalid API Key');
+          return { valid: false, error: data.error };
         }
-        return data;
-      } catch {
+      } catch (err) {
         setIsConnected(false);
-        setConnectionError('Connection failed. Please check network.');
-        return { valid: false, error: 'Connection failed' };
+        const error = err instanceof Error ? err.message : 'Network validation failed';
+        setConnectionError(error);
+        return { valid: false, error };
       }
     },
     []
   );
 
-  // ── New Chat ───────────────────────────────────────────
+  const selectConversation = useCallback((id: string) => {
+    setActiveConversationId(id);
+    saveActiveConversationId(id);
+  }, []);
+
   const newChat = useCallback(() => {
     const persona = PERSONAS.find((p) => p.id === settings.persona);
     const convo = createConversation(
-      settings.systemPrompt,
+      persona?.systemPrompt || settings.systemPrompt,
       settings.persona
     );
-    if (persona) {
-      convo.systemPrompt = persona.systemPrompt;
-    }
     const updated = [convo, ...conversations];
     persistConversations(updated);
     setActiveConversationId(convo.id);
     saveActiveConversationId(convo.id);
   }, [conversations, settings, persistConversations]);
 
-  // ── Select Conversation ────────────────────────────────
-  const selectConversation = useCallback((id: string) => {
-    setActiveConversationId(id);
-    saveActiveConversationId(id);
-  }, []);
-
-  // ── Delete Conversation ────────────────────────────────
   const deleteConversation = useCallback(
     (id: string) => {
       const updated = conversations.filter((c) => c.id !== id);
@@ -208,7 +208,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [conversations, activeConversationId, persistConversations]
   );
 
-  // ── Rename Conversation ────────────────────────────────
   const renameConversation = useCallback(
     (id: string, title: string) => {
       const updated = conversations.map((c) =>
@@ -219,7 +218,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [conversations, persistConversations]
   );
 
-  // ── Clear Messages ─────────────────────────────────────
   const clearConversation = useCallback(
     (id: string) => {
       const updated = conversations.map((c) =>
@@ -230,7 +228,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [conversations, persistConversations]
   );
 
-  // ── Stop Generation ────────────────────────────────────
   const stopGeneration = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -338,13 +335,14 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         if (!settings.streamingEnabled) {
           const data = await res.json();
           const responseContent = (data as { content?: string })?.content || '';
+          const finishReason = (data as { finishReason?: string })?.finishReason;
           currentConvos = currentConvos.map((c) => {
             if (c.id !== convoId) return c;
             return {
               ...c,
               messages: c.messages.map((m) =>
                 m.id === assistantMsg.id
-                  ? { ...m, content: responseContent, isStreaming: false }
+                  ? { ...m, content: responseContent, isStreaming: false, finishReason }
                   : m
               ),
               updatedAt: Date.now(),
@@ -359,6 +357,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
           const decoder = new TextDecoder();
           let accumulated = '';
           let buffer = '';
+          let lastFinishReason: string | undefined = undefined;
 
           while (true) {
             const { done, value } = await reader.read();
@@ -391,7 +390,11 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
                       updatedAt: Date.now(),
                     };
                   });
-                  persistConversations(currentConvos);
+                  // Update UI state smoothly without synchronous localStorage thrashing
+                  setConversations(currentConvos);
+                }
+                if (parsed.finishReason) {
+                  lastFinishReason = parsed.finishReason;
                 }
               } catch (e) {
                 if (e instanceof Error && e.message !== 'Stream error') {
@@ -401,14 +404,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
             }
           }
 
-          // Finalize streaming
+          // Finalize streaming and save once to local storage
           currentConvos = currentConvos.map((c) => {
             if (c.id !== convoId) return c;
             return {
               ...c,
               messages: c.messages.map((m) =>
                 m.id === assistantMsg.id
-                  ? { ...m, content: accumulated, isStreaming: false }
+                  ? {
+                      ...m,
+                      content: accumulated,
+                      isStreaming: false,
+                      finishReason: lastFinishReason,
+                    }
                   : m
               ),
               updatedAt: Date.now(),
@@ -421,7 +429,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setConnectionError(null);
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
-          // User halted generation
           currentConvos = currentConvos.map((c) => {
             if (c.id !== convoId) return c;
             return {
@@ -462,7 +469,9 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     [activeConversationId, conversations, settings, persistConversations]
   );
 
-  // ── Regenerate ─────────────────────────────────────────
+  const activeConversation =
+    conversations.find((c) => c.id === activeConversationId) || null;
+
   const regenerateLastResponse = useCallback(async () => {
     if (!activeConversation) return;
     const msgs = activeConversation.messages;
@@ -488,43 +497,24 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     });
     persistConversations(updated);
 
-    await sendMessage(userMsgBefore.content);
-  }, [
-    activeConversation,
-    activeConversationId,
-    conversations,
-    persistConversations,
-    sendMessage,
-  ]);
-
-  // ── Update Settings ────────────────────────────────────
-  const updateSettings = useCallback(
-    (partial: Partial<AISettings>) => {
-      setSettings((prev) => {
-        const updated = { ...prev, ...partial };
-        if (partial.apiKey !== undefined) {
-          apiKeyRef.current = partial.apiKey;
-        }
-        saveSettings(updated);
-        return updated;
-      });
-    },
-    []
-  );
+    setTimeout(() => {
+      sendMessage(userMsgBefore.content);
+    }, 50);
+  }, [activeConversation, activeConversationId, conversations, persistConversations, sendMessage]);
 
   return (
     <ChatContext.Provider
       value={{
         conversations,
-        activeConversationId,
         activeConversation,
+        activeConversationId,
         settings,
         availableModels,
         isStreaming,
         isConnected,
         connectionError,
-        newChat,
         selectConversation,
+        newChat,
         deleteConversation,
         renameConversation,
         clearConversation,
@@ -536,7 +526,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         setApiKeyInMemory,
       }}
     >
-      {children}
+      {mounted ? children : null}
     </ChatContext.Provider>
   );
 }

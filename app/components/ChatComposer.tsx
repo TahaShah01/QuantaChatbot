@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -77,8 +76,8 @@ export default function ChatComposer({ onOpenSettings }: ChatComposerProps) {
   const tokenCount = estimateTokens(input);
 
   return (
-    <div className="relative border-t border-border/50 bg-background/95 backdrop-blur-xl px-3 sm:px-4 pt-2.5 pb-3 sm:pb-4 z-20">
-      <div className="max-w-3xl mx-auto">
+    <div className="relative border-t border-border/60 bg-background/95 backdrop-blur-xl px-3 sm:px-6 lg:px-8 pt-2.5 pb-3 sm:pb-4 z-20">
+      <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto">
         {/* Missing API Key Banner */}
         {!hasApiKey && (
           <div className="mb-2.5 px-3.5 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-between text-xs animate-fade-in">
@@ -143,7 +142,7 @@ export default function ChatComposer({ onOpenSettings }: ChatComposerProps) {
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light shrink-0">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                   </svg>
-                  <span className="font-medium text-[11px] truncate max-w-[120px] sm:max-w-[160px]">
+                  <span className="font-medium text-[11px] truncate max-w-[120px] sm:max-w-[180px]">
                     {currentModel.name}
                   </span>
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted shrink-0">
@@ -151,14 +150,12 @@ export default function ChatComposer({ onOpenSettings }: ChatComposerProps) {
                   </svg>
                 </button>
 
-                {/* Model Popover Menu */}
+                {/* Popover Model Selection */}
                 {showModelPicker && (
                   <div className="absolute left-0 bottom-full mb-2 w-72 sm:w-80 bg-surface border border-border rounded-2xl shadow-2xl p-2 z-50 animate-fade-in max-h-72 overflow-y-auto">
-                    <div className="px-2 py-1 text-[10px] font-semibold text-muted uppercase tracking-wider flex items-center justify-between">
-                      <span>Select Groq Model</span>
-                      <span className="text-[9px] text-accent-light font-mono">Active</span>
+                    <div className="px-2 py-1 text-[10px] font-semibold text-muted uppercase tracking-wider">
+                      Switch Active Model
                     </div>
-
                     <div className="space-y-0.5 mt-1">
                       {availableModels.map((m) => {
                         const isSelected = settings.model === m.id && !settings.customModelId;
@@ -171,28 +168,27 @@ export default function ChatComposer({ onOpenSettings }: ChatComposerProps) {
                               setShowModelPicker(false);
                             }}
                             className={cn(
-                              'w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors',
+                              'w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors',
                               isSelected
-                                ? 'bg-accent/15 text-accent-light font-semibold'
-                                : 'text-foreground hover:bg-surface-hover'
+                                ? 'bg-accent/15 text-accent-light font-medium'
+                                : 'hover:bg-surface-hover text-foreground'
                             )}
                           >
                             <div className="min-w-0 pr-2">
                               <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-medium truncate">{m.name}</span>
+                                <span className="text-xs font-semibold text-foreground truncate">{m.name}</span>
                                 {m.badge && (
-                                  <span className="px-1.5 py-0.2 rounded bg-surface-alt border border-border text-[9px] font-mono text-muted shrink-0">
+                                  <span className="px-1.5 py-0.2 rounded-md bg-surface-alt border border-border/80 text-[10px] font-mono text-muted">
                                     {m.badge}
                                   </span>
                                 )}
                               </div>
                               <div className="text-[10px] text-muted font-mono mt-0.5">
-                                {m.speed} • {m.contextWindow} context
+                                {m.speed} • {m.contextWindow}
                               </div>
                             </div>
-
                             {isSelected && (
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-light shrink-0">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-accent-light shrink-0">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
                             )}
@@ -213,96 +209,94 @@ export default function ChatComposer({ onOpenSettings }: ChatComposerProps) {
                     setShowModelPicker(false);
                   }}
                   className={cn(
-                    'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs transition-colors border',
+                    'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs transition-all border',
                     showPersonaPicker
-                      ? 'bg-accent/15 border-accent text-accent-light'
+                      ? 'bg-accent/15 border-accent text-accent-light font-semibold shadow-sm'
                       : 'border-border/70 hover:border-border hover:bg-surface-hover text-muted-foreground hover:text-foreground'
                   )}
-                  title="Change persona"
+                  title="Change AI persona"
                 >
-                  <span>{currentPersona.icon}</span>
-                  <span className="font-medium text-[11px] hidden sm:inline">{currentPersona.name}</span>
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted">
+                  <span className="text-xs">{currentPersona.icon}</span>
+                  <span className="font-medium text-[11px] truncate max-w-[90px] sm:max-w-[130px]">
+                    {currentPersona.name}
+                  </span>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-muted shrink-0">
                     <path d="m6 9 6 6 6-6" />
                   </svg>
                 </button>
 
-                {/* Persona Popover */}
+                {/* Popover Persona Selection */}
                 {showPersonaPicker && (
-                  <div className="absolute left-0 bottom-full mb-2 w-64 bg-surface border border-border rounded-2xl shadow-2xl p-1.5 z-50 animate-fade-in">
+                  <div className="absolute left-0 bottom-full mb-2 w-64 bg-surface border border-border rounded-2xl shadow-2xl p-2 z-50 animate-fade-in max-h-64 overflow-y-auto">
                     <div className="px-2 py-1 text-[10px] font-semibold text-muted uppercase tracking-wider">
                       Select Persona
                     </div>
-                    <div className="space-y-0.5">
-                      {PERSONAS.map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => {
-                            updateSettings({ persona: p.id, systemPrompt: p.systemPrompt });
-                            setShowPersonaPicker(false);
-                          }}
-                          className={cn(
-                            'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-xl text-xs text-left transition-colors',
-                            settings.persona === p.id
-                              ? 'bg-accent/15 text-accent-light font-medium'
-                              : 'text-foreground hover:bg-surface-hover'
-                          )}
-                        >
-                          <span className="text-sm">{p.icon}</span>
-                          <div className="flex-1 truncate">
-                            <div className="font-medium truncate">{p.name}</div>
-                            <div className="text-[10px] text-muted truncate">{p.description}</div>
-                          </div>
-                        </button>
-                      ))}
+                    <div className="space-y-0.5 mt-1">
+                      {PERSONAS.map((p) => {
+                        const isSelected = settings.persona === p.id;
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => {
+                              updateSettings({ persona: p.id, systemPrompt: p.systemPrompt });
+                              setShowPersonaPicker(false);
+                            }}
+                            className={cn(
+                              'w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors',
+                              isSelected
+                                ? 'bg-accent/15 text-accent-light font-medium'
+                                : 'hover:bg-surface-hover text-foreground'
+                            )}
+                          >
+                            <div className="flex items-center gap-2 min-w-0 pr-2">
+                              <span>{p.icon}</span>
+                              <div className="truncate">
+                                <div className="text-xs font-semibold text-foreground truncate">{p.name}</div>
+                                <div className="text-[10px] text-muted truncate">{p.description}</div>
+                              </div>
+                            </div>
+                            {isSelected && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-accent-light shrink-0">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
               </div>
-
-              {/* Character & Token count */}
-              {input.length > 0 && (
-                <span className="text-[10px] font-mono text-muted/60 hidden sm:inline ml-1">
-                  ~{tokenCount} tokens
-                </span>
-              )}
             </div>
 
-            {/* Right Tools: Clear + Send/Stop Button */}
-            <div className="flex items-center gap-1.5">
-              {input.length > 0 && !isStreaming && (
-                <button
-                  type="button"
-                  onClick={() => setInput('')}
-                  className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-                  title="Clear input"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18 6 6 18M6 6l12 12" />
-                  </svg>
-                </button>
+            {/* Right: Stop or Send Button */}
+            <div className="flex items-center gap-2">
+              {input.length > 0 && (
+                <span className="text-[10px] font-mono text-muted hidden sm:inline select-none">
+                  ~{tokenCount} tokens
+                </span>
               )}
 
               {isStreaming ? (
                 <button
                   type="button"
                   onClick={stopGeneration}
-                  className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center hover:opacity-85 transition-opacity"
-                  title="Stop generating"
+                  className="w-8 h-8 rounded-full bg-rose-500 hover:bg-rose-600 text-white flex items-center justify-center transition-all shadow-md group"
+                  title="Stop generation"
                 >
-                  <span className="w-2.5 h-2.5 rounded-xs bg-background" />
+                  <div className="w-2.5 h-2.5 rounded-sm bg-white" />
                 </button>
               ) : (
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={!input.trim() || !hasApiKey}
+                  disabled={!input.trim()}
                   className={cn(
                     'w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200',
-                    input.trim() && hasApiKey
-                      ? 'bg-foreground text-background hover:opacity-90 shadow-sm'
-                      : 'bg-surface-alt text-muted/40 cursor-not-allowed border border-border/60'
+                    input.trim()
+                      ? 'bg-foreground text-background shadow-md hover:opacity-90 active:scale-95'
+                      : 'bg-surface-alt text-muted/50 cursor-not-allowed'
                   )}
                   title="Send message (Enter)"
                 >
@@ -316,10 +310,10 @@ export default function ChatComposer({ onOpenSettings }: ChatComposerProps) {
           </div>
         </div>
 
-        {/* Clean Footer Disclaimer */}
-        <p className="text-center text-[11px] text-muted mt-2 select-none">
-          QuantaV can make mistakes. Verify important info. • Powered by Groq Cloud
-        </p>
+        {/* Footer disclaimer */}
+        <div className="text-center mt-2 text-[10px] text-muted select-none">
+          <span>QuantaV can make mistakes. Verify important info. • Powered by Groq Cloud</span>
+        </div>
       </div>
     </div>
   );

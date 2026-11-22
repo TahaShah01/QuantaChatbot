@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useChat } from '@/app/providers/ChatProvider';
+import { useTheme } from '@/app/providers/ThemeProvider';
 import ChatMessage from './ChatMessage';
 import ChatComposer from './ChatComposer';
 import WelcomeScreen from './WelcomeScreen';
@@ -10,8 +11,8 @@ import {
   exportAsText,
   exportAsJSON,
   downloadFile,
+  cn,
 } from '@/lib/utils';
-import { cn } from '@/lib/utils';
 
 interface ChatAreaProps {
   isSidebarOpen: boolean;
@@ -34,6 +35,8 @@ export default function ChatArea({
     availableModels,
     newChat,
   } = useChat();
+
+  const { resolvedTheme, setTheme } = useTheme();
 
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
@@ -81,10 +84,14 @@ export default function ChatArea({
     }
   };
 
+  const toggleTheme = () => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  };
+
   return (
     <div className="relative flex-1 flex flex-col min-w-0 h-full bg-background overflow-hidden">
       {/* ── Top Header (Minimalist ChatGPT / Gemini Style) ────────────────── */}
-      <header className="relative z-20 flex items-center justify-between px-3 sm:px-4 h-12 border-b border-border/70 bg-background/90 backdrop-blur-md select-none shrink-0">
+      <header className="relative z-20 flex items-center justify-between px-3 sm:px-5 h-12 border-b border-border/70 bg-background/90 backdrop-blur-md select-none shrink-0">
         {/* Left: Sidebar Expand Button (only when collapsed) + Model Selector */}
         <div className="flex items-center gap-1.5 min-w-0">
           {/* Sidebar Expand Button — Only visible when sidebar is closed on desktop, or always on mobile */}
@@ -107,11 +114,11 @@ export default function ChatArea({
           <div className="relative" ref={modelPickerRef}>
             <button
               onClick={() => setShowModelPicker(!showModelPicker)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-surface-hover text-sm font-semibold text-foreground transition-colors group"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-surface-hover text-sm font-semibold text-foreground transition-colors group"
             >
               <span>QuantaV</span>
               <span className="text-muted font-normal text-xs">•</span>
-              <span className="text-xs text-muted-foreground group-hover:text-foreground font-medium truncate max-w-[140px] sm:max-w-[200px]">
+              <span className="text-xs text-muted-foreground group-hover:text-foreground font-medium truncate max-w-[130px] sm:max-w-[220px]">
                 {currentModel.name}
               </span>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted ml-0.5">
@@ -174,8 +181,27 @@ export default function ChatArea({
           </div>
         </div>
 
-        {/* Right: Minimalist Action Icons (New Chat, Chat Options, Settings) */}
+        {/* Right: Actions (Theme Toggle, New Chat, Options, Settings) */}
         <div className="flex items-center gap-1">
+          {/* Quick 1-Click Theme Switcher (Sun / Moon) */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-lg text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            title={resolvedTheme === 'dark' ? 'Switch to Light mode' : 'Switch to Dark mode'}
+            aria-label="Toggle theme mode"
+          >
+            {resolvedTheme === 'dark' ? (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+              </svg>
+            ) : (
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+              </svg>
+            )}
+          </button>
+
           {/* New Chat Button */}
           <button
             onClick={newChat}
@@ -281,16 +307,16 @@ export default function ChatArea({
         </div>
       </header>
 
-      {/* ── Main Message Scroll Area ──────────────────────────────────────── */}
+      {/* ── Main Message Scroll Area (Spacious Full-Width Container) ─────────── */}
       <div
         ref={scrollRef}
         className={cn(
-          'relative flex-1 overflow-y-auto px-3 sm:px-4',
+          'relative flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8',
           !hasMessages && 'flex items-center justify-center'
         )}
       >
         {hasMessages ? (
-          <div className="max-w-3xl mx-auto w-full py-4 sm:py-6">
+          <div className="max-w-4xl lg:max-w-5xl xl:max-w-6xl 2xl:max-w-7xl mx-auto w-full py-4 sm:py-6">
             {messages.map((msg, i) => (
               <ChatMessage
                 key={msg.id}

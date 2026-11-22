@@ -1,16 +1,6 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import React from 'react';
 import './globals.css';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
 
 export const metadata: Metadata = {
   title: 'QuantaV — Intelligence, without friction',
@@ -19,22 +9,24 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.ico' },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full`}
-    >
+    <html lang="en" suppressHydrationWarning className="h-full">
       <head>
-        {/* Prevent flash of wrong theme */}
+        {/* Anti-flash script for instant theme resolution */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=JSON.parse(localStorage.getItem('quantav-theme')||'"system"');var r=t==='system'?(window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'):t;document.documentElement.setAttribute('data-theme',r)}catch(e){document.documentElement.setAttribute('data-theme','dark')}})();`,
           }}
         />
       </head>
-      <body className="h-full overflow-hidden">{children}</body>
+      <body className="h-full overflow-hidden bg-background text-foreground antialiased select-auto">
+        {children}
+      </body>
     </html>
   );
 }

@@ -36,7 +36,7 @@ export default function WelcomeScreen() {
   }, []);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-10 max-w-2xl mx-auto w-full select-none animate-fade-in">
+    <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 py-10 max-w-3xl sm:max-w-4xl mx-auto w-full select-none animate-fade-in">
       {/* Centered Brand Mark */}
       <div className="flex flex-col items-center text-center mb-8">
         <QuantaIcon size="lg" glow={true} className="mb-4" />
@@ -49,17 +49,17 @@ export default function WelcomeScreen() {
       </div>
 
       {/* Clean 2x2 Minimalist Suggestion Grid (ChatGPT / Gemini style) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
         {PROMPT_SUGGESTIONS.map((item, i) => (
           <button
             key={i}
             onClick={() => sendMessage(item.prompt)}
-            className="p-3.5 rounded-2xl border border-border/80 bg-surface hover:bg-surface-hover hover:border-border text-left transition-all group"
+            className="p-4 rounded-2xl border border-border/80 bg-surface hover:bg-surface-hover hover:border-border text-left transition-all group shadow-sm hover:shadow-md"
           >
-            <div className="text-xs font-semibold text-foreground group-hover:text-accent-light transition-colors">
+            <div className="text-xs sm:text-sm font-semibold text-foreground group-hover:text-accent-light transition-colors">
               {item.title}
             </div>
-            <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">
+            <div className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
               {item.prompt}
             </div>
           </button>

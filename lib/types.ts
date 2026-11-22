@@ -4,6 +4,7 @@ export interface Message {
   content: string;
   timestamp: number;
   isStreaming?: boolean;
+  finishReason?: string;
 }
 
 export interface Conversation {
@@ -99,19 +100,19 @@ export const AVAILABLE_MODELS: GroqModelOption[] = [
     id: 'llama-3.1-8b-instant',
     name: 'Llama 3.1 8B Instant',
     category: 'Ultra-Fast & Versatile',
-    badge: 'Recommended',
+    badge: '30k TPM • Recommended',
     speed: '~560 tps',
     contextWindow: '131,072',
-    description: 'Ultra-low latency, highly accessible on all Groq tiers with 131k context window.',
+    description: 'Highest TPM limits (30k tokens/min). Instant latency and rock-solid reliability across all accounts.',
   },
   {
     id: 'openai/gpt-oss-120b',
     name: 'GPT OSS 120B',
     category: 'Latest & Powerful',
-    badge: 'Latest',
+    badge: 'Latest Reasoning',
     speed: '~500 tps',
     contextWindow: '131,072',
-    description: 'OpenAI 120B open weights model with massive ~500 tps reasoning throughput.',
+    description: 'OpenAI 120B open weights model. Auto-budgeted to 7.5k TPM to prevent free tier rate limits.',
   },
   {
     id: 'openai/gpt-oss-20b',
@@ -120,7 +121,7 @@ export const AVAILABLE_MODELS: GroqModelOption[] = [
     badge: '1,000 tps',
     speed: '~1,000 tps',
     contextWindow: '131,072',
-    description: 'Extreme speed 20B model engineered for instantaneous conversational responses.',
+    description: 'Extreme speed 20B model engineered for instantaneous conversational responses and coding.',
   },
   {
     id: 'qwen/qwen3.8-27b',
